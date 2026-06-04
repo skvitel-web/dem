@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Обучение вождению речного транспорта
 
 Spring Boot 3 + PostgreSQL **`driver_rf`** + HTML/CSS/JS.
@@ -112,3 +113,6 @@ java -jar target\driver-training-1.0.0.jar
 - `GET /api/admin/applications` — все заявки (админ)  
 - `PUT /api/admin/applications/{id}/status` — смена статуса  
 - `GET /api/courses` — виды транспорта из `portal_transporttype`
+=======
+
+>>>>>>> e8a1ef6c386030d425be128af23660712c88ae81
