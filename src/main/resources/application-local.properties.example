@@ -1,0 +1,4 @@
+# Скопируйте этот файл как application-local.properties и укажите свои данные PostgreSQL
+spring.datasource.url=jdbc:postgresql://localhost:5432/driver_rf
+spring.datasource.username=postgres
+spring.datasource.password=Dragon!55

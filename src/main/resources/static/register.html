@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Регистрация — Речной транспорт</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main class="page">
+    <div data-trail='[{"href":"/","label":"Главная"},{"label":"Регистрация"}]'></div>
+    <div class="card" style="max-width: 480px; margin: 2rem auto;">
+      <p class="logo">Речной транспорт</p>
+      <h1>Регистрация</h1>
+      <p class="subtitle">Создайте учётную запись для подачи заявок на обучение</p>
+      <div id="formAlert" class="alert alert-error" style="display:none;"></div>
+      <form id="registerForm" class="form-grid" novalidate>
+        <div>
+          <label for="fullName">ФИО *</label>
+          <input id="fullName" name="fullName" required maxlength="150" autocomplete="name">
+          <div class="field-error" data-error="fullName"></div>
+        </div>
+        <div>
+          <label for="email">E-mail (логин) *</label>
+          <input id="email" name="email" type="email" required autocomplete="email">
+          <div class="field-error" data-error="email"></div>
+        </div>
+        <div>
+          <label for="phone">Телефон *</label>
+          <input id="phone" name="phone" type="tel" placeholder="+7 900 000-00-00" required>
+          <div class="field-error" data-error="phone"></div>
+        </div>
+        <div>
+          <label for="birthDate">Дата рождения (ДД.ММ.ГГГГ) *</label>
+          <input id="birthDate" name="birthDate" placeholder="01.01.2000" required>
+          <div class="field-error" data-error="birthDate"></div>
+        </div>
+        <div>
+          <label for="password">Пароль (латиница и цифры, от 6 символов) *</label>
+          <input id="password" name="password" type="password" required autocomplete="new-password">
+          <div class="field-error" data-error="password"></div>
+        </div>
+        <button type="submit" class="btn btn-primary">Зарегистрироваться</button>
+      </form>
+      <p style="margin-top:1rem;">Уже есть аккаунт? <a href="/login.html">Войти</a></p>
+    </div>
+  </main>
+  <script src="/js/breadcrumbs.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/validation.js"></script>
+  <script>
+    const form = document.getElementById("registerForm");
+    const alertBox = document.getElementById("formAlert");
+
+    function showAlert(msg) {
+      alertBox.textContent = msg;
+      alertBox.style.display = msg ? "block" : "none";
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      showAlert("");
+      const data = {
+        fullName: form.fullName.value.trim(),
+        email: form.email.value.trim(),
+        phone: form.phone.value.trim(),
+        birthDate: form.birthDate.value.trim(),
+        password: form.password.value,
+      };
+
+      let valid = true;
+      Validation.showError(document.querySelector('[data-error="fullName"]'), "");
+      Validation.showError(document.querySelector('[data-error="email"]'), "");
+      Validation.showError(document.querySelector('[data-error="phone"]'), "");
+      Validation.showError(document.querySelector('[data-error="birthDate"]'), "");
+      Validation.showError(document.querySelector('[data-error="password"]'), "");
+
+      if (!data.fullName) {
+        Validation.showError(document.querySelector('[data-error="fullName"]'), "Укажите ФИО");
+        valid = false;
+      }
+      if (!Validation.email(data.email)) {
+        Validation.showError(document.querySelector('[data-error="email"]'), "Некорректный e-mail");
+        valid = false;
+      }
+      if (!Validation.phone(data.phone)) {
+        Validation.showError(document.querySelector('[data-error="phone"]'), "Некорректный телефон");
+        valid = false;
+      }
+      if (!Validation.dateDdMmYyyy(data.birthDate)) {
+        Validation.showError(document.querySelector('[data-error="birthDate"]'), "Формат ДД.ММ.ГГГГ");
+        valid = false;
+      }
+      if (!Validation.password(data.password)) {
+        Validation.showError(document.querySelector('[data-error="password"]'), "Мин. 6 символов, латиница и цифры");
+        valid = false;
+      }
+      if (!valid) return;
+
+      try {
+        await API.register(data);
+        window.location.href = "/login.html";
+      } catch (err) {
+        const msg = err.body?.message || err.message;
+        if (err.status === 409) {
+          Validation.showError(document.querySelector('[data-error="email"]'), "E-mail уже занят");
+        }
+        if (err.body?.errors) {
+          Object.entries(err.body.errors).forEach(([k, v]) => {
+            Validation.showError(document.querySelector(`[data-error="${k}"]`), v);
+          });
+        }
+        showAlert(msg);
+      }
+    });
+  </script>
+</body>
+</html>

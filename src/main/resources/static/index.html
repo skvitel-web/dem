@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a1628">
+  <title>Речной транспорт — обучение вождению</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="home-body">
+  <header class="home-header">
+    <a href="/" class="logo">Речной транспорт</a>
+    <nav class="home-nav">
+      <a href="/login.html" class="btn btn-secondary btn-sm">Вход</a>
+      <a href="/register.html" class="btn btn-primary btn-sm">Регистрация</a>
+    </nav>
+  </header>
+
+  <main class="page page--home">
+    <section class="home-hero card">
+      <!-- Слайдер: 4 слайда, автосмена каждые 3 с (картинки подставьте в .slider-slide или через background-image в CSS) -->
+      <div class="slider slider--hero" id="mainSlider" aria-roledescription="carousel" aria-label="Слайдер">
+        <div class="slider-track">
+          <div class="slider-slide" data-slide="1"></div>
+          <div class="slider-slide" data-slide="2"></div>
+          <div class="slider-slide" data-slide="3"></div>
+          <div class="slider-slide" data-slide="4"></div>
+        </div>
+        <div class="slider-controls">
+          <button type="button" class="slider-btn" data-slider-prev aria-label="Предыдущий слайд">‹</button>
+          <button type="button" class="slider-btn" data-slider-next aria-label="Следующий слайд">›</button>
+        </div>
+        <div class="slider-dots"></div>
+      </div>
+
+      <div class="home-intro">
+        <h1>Очное обучение вождению речного транспорта</h1>
+        <p class="subtitle">
+          Катера, круизные лайнеры и яхты. Подача заявки онлайн, личный кабинет и отзывы после курса.
+        </p>
+        <div class="home-actions">
+          <a href="/register.html" class="btn btn-primary">Начать обучение</a>
+          <a href="/login.html" class="btn btn-secondary">Войти в кабинет</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-features">
+      <article class="card feature-card">
+        <h2>Заявка на курс</h2>
+        <p>Выберите вид транспорта, дату и способ оплаты.</p>
+        <a href="/order.html">Оформить →</a>
+      </article>
+      <article class="card feature-card">
+        <h2>Личный кабинет</h2>
+        <p>История заявок и отзывы по завершённым курсам.</p>
+        <a href="/profile.html">Открыть →</a>
+      </article>
+      <article class="card feature-card">
+        <h2>Администрирование</h2>
+        <p>Управление статусами заявок.</p>
+        <a href="/admin.html">Панель →</a>
+      </article>
+    </section>
+  </main>
+
+  <footer class="home-footer">
+    <small>Демо 09.02.07 · PostgreSQL: driver_rf · порт 8045</small>
+  </footer>
+
+  <script src="/js/slider.js"></script>
+  <script>
+    initSlider(document.getElementById("mainSlider"), { interval: 3000 });
+  </script>
+</body>
+</html>

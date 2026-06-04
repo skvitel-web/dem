@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Личный кабинет — Речной транспорт</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main class="page">
+    <div data-trail='[{"href":"/","label":"Главная"},{"label":"Личный кабинет"}]'></div>
+    <header class="nav-bar">
+      <span class="logo">Речной транспорт</span>
+      <nav class="nav-links">
+        <a href="/order.html" class="btn btn-primary btn-sm">Новая заявка</a>
+        <button type="button" id="logoutBtn" class="btn btn-secondary btn-sm">Выход</button>
+      </nav>
+    </header>
+
+    <section class="card">
+      <h1 id="welcome">Добро пожаловать!</h1>
+      <p class="subtitle" id="userInfo"></p>
+
+      <div class="slider" id="heroSlider">
+        <div class="slider-track">
+          <img class="slider-slide" src="/images/slide-1.svg" alt="Слайд 1">
+          <img class="slider-slide" src="/images/slide-2.svg" alt="Слайд 2">
+          <img class="slider-slide" src="/images/slide-3.svg" alt="Слайд 3">
+          <img class="slider-slide" src="/images/slide-4.svg" alt="Слайд 4">
+        </div>
+        <div class="slider-controls">
+          <button type="button" class="slider-btn" data-slider-prev aria-label="Назад">‹</button>
+          <button type="button" class="slider-btn" data-slider-next aria-label="Вперёд">›</button>
+        </div>
+        <div class="slider-dots"></div>
+      </div>
+    </section>
+
+    <section class="card" style="margin-top:1rem;">
+      <h2>История заявок</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Курс</th>
+              <th>Начало</th>
+              <th>Оплата</th>
+              <th>Статус</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="appsBody">
+            <tr><td colspan="5">Загрузка…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-overlay" id="reviewModal">
+    <div class="modal">
+      <h2>Отзыв о курсе</h2>
+      <textarea id="reviewText" rows="5" placeholder="Опишите впечатления (мин. 10 символов)"></textarea>
+      <div class="field-error" id="reviewError"></div>
+      <div style="display:flex;gap:0.5rem;margin-top:1rem;">
+        <button type="button" class="btn btn-primary" id="submitReview">Отправить</button>
+        <button type="button" class="btn btn-secondary" id="closeReview">Отмена</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/breadcrumbs.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/toast.js"></script>
+  <script src="/js/slider.js"></script>
+  <script>
+    let reviewAppId = null;
+
+    function statusBadge(status) {
+      if (status === "Новая") return '<span class="badge badge-new">Новая</span>';
+      if (status === "Идет обучение") return '<span class="badge badge-progress">Идет обучение</span>';
+      return '<span class="badge badge-done">Обучение завершено</span>';
+    }
+
+    async function loadProfile() {
+      try {
+        const me = await API.me();
+        document.getElementById("welcome").textContent = `Здравствуйте, ${me.data.fullName}!`;
+        document.getElementById("userInfo").textContent = `${me.data.email} · ${me.data.phone}`;
+      } catch {
+        window.location.href = "/login.html";
+        return;
+      }
+
+      const appsRes = await API.myApplications();
+      const apps = appsRes.data || [];
+      const tbody = document.getElementById("appsBody");
+      if (!apps.length) {
+        tbody.innerHTML = '<tr><td colspan="5">Заявок пока нет. <a href="/order.html">Оформить заявку</a></td></tr>';
+        return;
+      }
+      tbody.innerHTML = apps.map((a) => {
+        const reviewBtn = a.status === "Обучение завершено" && !a.hasReview
+          ? `<button class="btn btn-secondary btn-sm" data-review="${a.id}">Оставить отзыв</button>`
+          : (a.hasReview ? "Отзыв отправлен" : "");
+        return `<tr>
+          <td>${a.courseName}</td>
+          <td>${a.startDate}</td>
+          <td>${a.paymentMethod}</td>
+          <td>${statusBadge(a.status)}</td>
+          <td>${reviewBtn}</td>
+        </tr>`;
+      }).join("");
+
+      tbody.querySelectorAll("[data-review]").forEach((btn) => {
+        btn.addEventListener("click", () => openReview(Number(btn.dataset.review)));
+      });
+    }
+
+    function openReview(id) {
+      reviewAppId = id;
+      document.getElementById("reviewText").value = "";
+      document.getElementById("reviewError").textContent = "";
+      document.getElementById("reviewModal").classList.add("open");
+    }
+
+    document.getElementById("closeReview").addEventListener("click", () => {
+      document.getElementById("reviewModal").classList.remove("open");
+    });
+
+    document.getElementById("submitReview").addEventListener("click", async () => {
+      const text = document.getElementById("reviewText").value.trim();
+      if (text.length < 10) {
+        document.getElementById("reviewError").textContent = "Минимум 10 символов";
+        return;
+      }
+      try {
+        await API.addReview(reviewAppId, text);
+        document.getElementById("reviewModal").classList.remove("open");
+        Toast.show("Отзыв сохранён", "success");
+        loadProfile();
+      } catch (err) {
+        document.getElementById("reviewError").textContent = err.body?.message || err.message;
+      }
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await API.logout();
+      window.location.href = "/login.html";
+    });
+
+    initSlider(document.getElementById("heroSlider"));
+    loadProfile();
+  </script>
+</body>
+</html>

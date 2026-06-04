@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Заявка на обучение — Речной транспорт</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main class="page">
+    <div data-trail='[{"href":"/","label":"Главная"},{"href":"/profile.html","label":"Личный кабинет"},{"label":"Заявка"}]'></div>
+    <header class="nav-bar">
+      <span class="logo">Речной транспорт</span>
+      <nav class="nav-links">
+        <a href="/profile.html">Личный кабинет</a>
+      </nav>
+    </header>
+
+    <section class="card" style="max-width: 520px;">
+      <h1>Оформление заявки</h1>
+      <p class="subtitle">Выберите вид транспорта, дату начала и способ оплаты</p>
+      <div id="orderAlert" class="alert alert-error" style="display:none;"></div>
+      <form id="orderForm" class="form-grid" novalidate>
+        <div>
+          <label for="courseId">Вид транспорта *</label>
+          <select id="courseId" name="courseId" required>
+            <option value="">Загрузка…</option>
+          </select>
+          <div class="field-error" data-error="courseId"></div>
+        </div>
+        <div>
+          <label for="startDate">Дата начала обучения (ДД.ММ.ГГГГ) *</label>
+          <input id="startDate" name="startDate" placeholder="15.09.2026" required>
+          <div class="field-error" data-error="startDate"></div>
+        </div>
+        <div>
+          <label for="paymentMethod">Способ оплаты *</label>
+          <select id="paymentMethod" name="paymentMethod" required>
+            <option value="">Выберите…</option>
+            <option value="Наличные">Наличные</option>
+            <option value="Банковская карта">Банковская карта</option>
+            <option value="Банковский перевод">Банковский перевод</option>
+          </select>
+          <div class="field-error" data-error="paymentMethod"></div>
+        </div>
+        <button type="submit" class="btn btn-primary">Отправить заявку</button>
+      </form>
+    </section>
+  </main>
+  <script src="/js/breadcrumbs.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/validation.js"></script>
+  <script>
+    const form = document.getElementById("orderForm");
+    const alertBox = document.getElementById("orderAlert");
+
+    async function init() {
+      try {
+        await API.me();
+      } catch {
+        window.location.href = "/login.html";
+        return;
+      }
+      const res = await API.courses();
+      const select = document.getElementById("courseId");
+      select.innerHTML = '<option value="">Выберите вид транспорта…</option>';
+      (res.data || []).forEach((c) => {
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name;
+        select.appendChild(opt);
+      });
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      alertBox.style.display = "none";
+      const payload = {
+        courseId: Number(form.courseId.value),
+        startDate: form.startDate.value.trim(),
+        paymentMethod: form.paymentMethod.value,
+      };
+      let ok = true;
+      if (!payload.courseId) {
+        Validation.showError(document.querySelector('[data-error="courseId"]'), "Выберите транспорт");
+        ok = false;
+      }
+      if (!Validation.dateDdMmYyyy(payload.startDate)) {
+        Validation.showError(document.querySelector('[data-error="startDate"]'), "Формат ДД.ММ.ГГГГ");
+        ok = false;
+      }
+      if (!payload.paymentMethod) {
+        Validation.showError(document.querySelector('[data-error="paymentMethod"]'), "Выберите оплату");
+        ok = false;
+      }
+      if (!ok) return;
+
+      try {
+        await API.createApplication(payload);
+        window.location.href = "/profile.html";
+      } catch (err) {
+        alertBox.textContent = err.body?.message || err.message;
+        alertBox.style.display = "block";
+      }
+    });
+
+    init();
+  </script>
+</body>
+</html>

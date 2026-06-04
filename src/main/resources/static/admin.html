@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Панель администратора — Речной транспорт</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <main class="page">
+    <div data-trail='[{"href":"/","label":"Главная"},{"label":"Админ-панель"}]'></div>
+    <header class="nav-bar">
+      <span class="logo">Администрирование</span>
+      <nav class="nav-links">
+        <button type="button" id="logoutBtn" class="btn btn-secondary btn-sm">Выход</button>
+      </nav>
+    </header>
+
+    <section class="card">
+      <h1>Заявки системы</h1>
+      <p class="subtitle">Доступ: Admin26 / Demo20</p>
+
+      <div class="admin-toolbar">
+        <div>
+          <label for="filterStatus">Статус</label>
+          <select id="filterStatus">
+            <option value="">Все</option>
+            <option value="Новая">Новая</option>
+            <option value="Идет обучение">Идет обучение</option>
+            <option value="Обучение завершено">Обучение завершено</option>
+          </select>
+        </div>
+        <div>
+          <label for="sortBy">Сортировка</label>
+          <select id="sortBy">
+            <option value="">По дате создания</option>
+            <option value="startDate">По дате начала</option>
+            <option value="status">По статусу</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" id="applyFilters">Применить</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Пользователь</th>
+              <th>Курс</th>
+              <th>Начало</th>
+              <th>Оплата</th>
+              <th>Статус</th>
+              <th>Управление</th>
+            </tr>
+          </thead>
+          <tbody id="adminBody">
+            <tr><td colspan="7">Загрузка…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination" id="pagination"></div>
+    </section>
+  </main>
+
+  <script src="/js/breadcrumbs.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/toast.js"></script>
+  <script>
+    let currentPage = 0;
+    const pageSize = 8;
+
+    const STATUS_FLOW = {
+      "Новая": "Идет обучение",
+      "Идет обучение": "Обучение завершено",
+    };
+
+    function statusBadge(s) {
+      if (s === "Новая") return '<span class="badge badge-new">Новая</span>';
+      if (s === "Идет обучение") return '<span class="badge badge-progress">Идет обучение</span>';
+      return '<span class="badge badge-done">Обучение завершено</span>';
+    }
+
+    async function ensureAdmin() {
+      try {
+        const me = await API.me();
+        if (me.data.role !== "ROLE_ADMIN") {
+          Toast.show("Доступ только для администратора", "error");
+          window.location.href = "/login.html";
+        }
+      } catch {
+        window.location.href = "/login.html";
+      }
+    }
+
+    async function loadApps(page = 0) {
+      currentPage = page;
+      const status = document.getElementById("filterStatus").value;
+      const sort = document.getElementById("sortBy").value;
+      const params = { page, size: pageSize };
+      if (status) params.status = status;
+      if (sort) params.sort = sort;
+
+      try {
+        const res = await API.adminApplications(params);
+        const data = res.data;
+        const tbody = document.getElementById("adminBody");
+        const items = data.content || [];
+        if (!items.length) {
+          tbody.innerHTML = '<tr><td colspan="7">Заявок не найдено</td></tr>';
+        } else {
+          tbody.innerHTML = items.map((a) => {
+            const next = STATUS_FLOW[a.status];
+            const action = next
+              ? `<button class="btn btn-primary btn-sm" data-id="${a.id}" data-next="${next}">→ ${next}</button>`
+              : '<span class="muted">Завершено</span>';
+            return `<tr>
+              <td>${a.id}</td>
+              <td>${a.userFullName}<br><small>${a.userEmail}</small></td>
+              <td>${a.courseName}</td>
+              <td>${a.startDate}</td>
+              <td>${a.paymentMethod}</td>
+              <td>${statusBadge(a.status)}</td>
+              <td>${action}</td>
+            </tr>`;
+          }).join("");
+
+          tbody.querySelectorAll("[data-next]").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+              try {
+                await API.updateStatus(btn.dataset.id, btn.dataset.next);
+                Toast.show("Статус обновлён", "success");
+                loadApps(currentPage);
+              } catch (err) {
+                Toast.show(err.body?.message || err.message, "error");
+              }
+            });
+          });
+        }
+
+        renderPagination(data);
+      } catch (err) {
+        Toast.show(err.body?.message || err.message, "error");
+      }
+    }
+
+    function renderPagination(data) {
+      const el = document.getElementById("pagination");
+      const total = data.totalPages || 0;
+      if (total <= 1) {
+        el.innerHTML = `<span>Всего: ${data.totalElements || 0}</span>`;
+        return;
+      }
+      let html = `<button class="btn btn-secondary btn-sm" ${currentPage === 0 ? "disabled" : ""} data-page="${currentPage - 1}">Назад</button>`;
+      html += `<span>Стр. ${currentPage + 1} из ${total}</span>`;
+      html += `<button class="btn btn-secondary btn-sm" ${currentPage >= total - 1 ? "disabled" : ""} data-page="${currentPage + 1}">Вперёд</button>`;
+      el.innerHTML = html;
+      el.querySelectorAll("[data-page]").forEach((b) => {
+        if (!b.disabled) {
+          b.addEventListener("click", () => loadApps(Number(b.dataset.page)));
+        }
+      });
+    }
+
+    document.getElementById("applyFilters").addEventListener("click", () => loadApps(0));
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await API.logout();
+      window.location.href = "/login.html";
+    });
+
+    ensureAdmin().then(() => loadApps(0));
+  </script>
+</body>
+</html>
